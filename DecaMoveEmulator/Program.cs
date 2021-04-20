@@ -1,15 +1,10 @@
 ﻿using System;
-using System.IO.Ports;
-using System.Management;
 using System.Threading;
 using Joycon4CS;
 using System.Reflection;
 using System.IO;
-using System.Diagnostics;
-using System.Reflection.Emit;
-using System.Globalization;
-using Pose;
 using HarmonyLib;
+using System.Diagnostics;
 
 namespace DecaMoveEmulator
 {
@@ -42,8 +37,19 @@ namespace DecaMoveEmulator
 
 		static void Main(string[] args)
         {
+			KillExistingService();
 			PatchDMS();
 			StreamJoyconData();
+        }
+
+		static void KillExistingService()
+        {
+			var services = Process.GetProcessesByName("DecaMoveService2");
+			if(services.Length > 0)
+            {
+				foreach (var process in services)
+					process.Kill();
+            }
         }
 		
 		static void PatchDMS()
