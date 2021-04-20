@@ -1,7 +1,13 @@
 # Joycon DecaMove Emulator
-A very WIP DecaMove emulator for Joycons. 
+A WIP DecaMove emulator for Joycons. 
 
-I am working on removing the need for com0com, it already works by hooking directly into the service and bypassing the serial communication, however the software still needs to see the serial connection in order to work :(
+~~I am working on removing the need for com0com, it already works by hooking directly into the service and bypassing the serial communication, however the software still needs to see the serial connection in order to work :(~~ Done!
+
+## WIP Features
+
+- ~~Remove need for third party software~~ Done!
+- Haptic Feedback support
+- Correct battery indicator
 
 ## Installation
 
@@ -11,8 +17,8 @@ I am working on removing the need for com0com, it already works by hooking direc
 
 3. Connect Joycon to PC via Bluetooth.
 
-4. Ensure DecaMoveService2.exe is not running (DecaHub should say "Service Stopped", if it is running, kill the process with Task Manager), and Run DecaMoveEmulator.exe, If com0com is not installed, it will instruct you to install it. Once you get to "Choose components" ensure that CNCA0 <-> CNCB0 is UNCHECKED. Press enter to continue running once the installation is completed.
+4. Run DecaMoveEmulator.exe!
 
-5. SteamVR should start automatically, launch any compatible game from DecaHub.
+5. SteamVR should start automatically, calibrate by holding controllers close together at your waist while looking forward, and launch any compatible game from DecaHub. 
 
 
