@@ -11,8 +11,7 @@ I am working on removing the need for com0com, it already works by hooking direc
 
 3. Connect Joycon to PC via Bluetooth.
 
-4. Run DecaMoveEmulator.exe
-If com0com is not installed, it will instruct you to install it. Once you get to "Choose components" ensure that CNCA0 <-> CNCB0 is UNCHECKED. Press enter to continue running once the installation is complete.
+4. Run DecaMoveEmulator.exe, If com0com is not installed, it will instruct you to install it. Once you get to "Choose components" ensure that CNCA0 <-> CNCB0 is UNCHECKED. Press enter to continue running once the installation is completed.
 
 5. SteamVR should start automatically, launch any compatible game from DecaHub.
 
