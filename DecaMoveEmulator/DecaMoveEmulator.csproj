@@ -91,11 +91,20 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony, Version=2.0.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Lib.Harmony.2.0.4\lib\net48\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Reflection, Version=1.1.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Reflection.Core.1.1.1\lib\net45\Mono.Reflection.dll</HintPath>
+    </Reference>
     <Reference Include="PeNet, Version=0.8.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\PeNet.0.8.1\lib\net461\PeNet.dll</HintPath>
     </Reference>
     <Reference Include="PeNet.Asn1, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\PeNet.Asn1.1.3.1\lib\net461\PeNet.Asn1.dll</HintPath>
+    </Reference>
+    <Reference Include="Pose, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pose.1.2.1\lib\netstandard2.0\Pose.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -147,9 +156,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="hidapi.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Setup_com0com_v3.0.0.0_W7_x64_signed.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -8,25 +8,29 @@ using System.IO;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Globalization;
-
-namespace DecaMoveCommon
-{
-	// Token: 0x0200000A RID: 10
-	public enum DongleState
-	{
-		// Token: 0x0400002A RID: 42
-		Closed,
-		// Token: 0x0400002B RID: 43
-		Open,
-		// Token: 0x0400002C RID: 44
-		Paired,
-		// Token: 0x0400002D RID: 45
-		Streaming
-	}
-}
+using Pose;
+using HarmonyLib;
 
 namespace DecaMoveEmulator
 {
+	class StatePatch
+    {
+		public static void MyPostfix(ref object __result)
+		{
+			__result = 3;
+		}
+	}
+
+	class SerialWritePatch
+    {
+		public static void MyPrefix(object __instance){}
+
+		public static void MyPostfix(object __instance, string text)
+        {
+			Console.WriteLine("[Serial Packet] " + text);
+        }
+    }
+
 	class Program
     {
 		static byte[] batpkt = { 0x62, 0x62, 0x13, 0x37 };//, 0x0D, 0x0A };
@@ -38,22 +42,8 @@ namespace DecaMoveEmulator
 
 		static void Main(string[] args)
         {
-			CheckForCom();
 			PatchDMS();
 			StreamJoyconData();
-        }
-
-		static void CheckForCom()
-        {
-			if(!Directory.Exists(@"C:\Program Files (x86)\com0com"))
-            {
-				Console.WriteLine("com0com not detected! Press enter to run installer.");
-				Console.WriteLine("IMPORTANT!!!!!! In the 'Choose Components' section UNCHECK 'CNCA0 <-> CNCB0' otherwise it will not be setup properly.");
-				Console.ReadLine();
-				Process.Start("Setup_com0com_v3.0.0.0_W7_x64_signed.exe");
-				Console.WriteLine("Press enter when finished installing.");
-				Console.ReadLine();
-			}
         }
 		
 		static void PatchDMS()
@@ -74,17 +64,16 @@ namespace DecaMoveEmulator
 				PropertyInfo DecaMoveChannel = dmstype.GetProperty("DecaMoveChannel", BindingFlags.NonPublic | BindingFlags.Instance);
 				decaMoveChannel = DecaMoveChannel.GetValue(decaMoveService);
 
-				decaMoveChannel.DmInfo.Streaming.Set(true);
-				decaMoveChannel.DmInfo.Paired.Set(true);
+				var harmony = new Harmony("com.example.patch");
 
-				FieldInfo vendorIdStr = dmctype.GetField("vendorIdStr", BindingFlags.NonPublic | BindingFlags.Instance);
-				vendorIdStr.SetValue(decaMoveChannel, "CNCA");
+				MethodInfo getState = dmctype.GetMethod("get_State", BindingFlags.Instance | BindingFlags.Public);
+				var mPostfix = typeof(StatePatch).GetMethod("MyPostfix", BindingFlags.Static | BindingFlags.Public);
+				harmony.Patch(getState, new HarmonyMethod(mPostfix), new HarmonyMethod(mPostfix));
 
-				FieldInfo productIdStr = dmctype.GetField("productIdStr", BindingFlags.NonPublic | BindingFlags.Instance);
-				productIdStr.SetValue(decaMoveChannel, "CNCA");
-
-				MethodInfo tryOpen = dmctype.GetMethod("TryOpen", BindingFlags.NonPublic | BindingFlags.Instance);
-				tryOpen.Invoke(decaMoveChannel, new object[] { false });
+				MethodInfo write = dmctype.GetMethod("Write", BindingFlags.NonPublic | BindingFlags.Instance);
+				var mPrefixWrite = typeof(SerialWritePatch).GetMethod("MyPrefix", BindingFlags.Static | BindingFlags.Public);
+				var mPostfixWrite = typeof(SerialWritePatch).GetMethod("MyPostfix", BindingFlags.Static | BindingFlags.Public);
+				harmony.Patch(write, new HarmonyMethod(mPrefixWrite), new HarmonyMethod(mPostfixWrite));
 
 				MethodInfo installStuff = dmctype.GetMethod("InstallStuff", BindingFlags.NonPublic | BindingFlags.Instance);
 				installStuff.Invoke(decaMoveChannel, new object[] { true });
@@ -118,15 +107,6 @@ namespace DecaMoveEmulator
 				return;
 			}
 
-			//var port = new SerialPort(GetComPort(), 256000);
-			//ReadSerialData(port);
-
-			//port.Open();
-
-			//port.Write(verpkt, 0, verpkt.Length);
-			//port.Write(onpkt, 0, onpkt.Length);
-			//port.Write(batpkt, 0, batpkt.Length);
-
 			processPacket.Invoke(decaMoveChannel, new object[] { verpkt });
 			processPacket.Invoke(decaMoveChannel, new object[] { onpkt });
 			processPacket.Invoke(decaMoveChannel, new object[] { batpkt });
@@ -136,40 +116,9 @@ namespace DecaMoveEmulator
 				JoyconManager.Instance.Update();
 
 				var pkt = EncodeQuaternion(jc.GetVector());
-				//port.Write(pkt, 0, pkt.Length);
 				processPacket.Invoke(decaMoveChannel, new object[] { pkt });
 				Thread.Sleep(5);
 			}
-		}
-
-        private static void ReadSerialData(SerialPort port)
-        {
-			new Thread(() =>
-			{
-				while (!port.IsOpen) { Thread.Sleep(100); }
-				while(port.IsOpen)
-                {
-					Console.WriteLine(port.ReadLine());
-                }
-			}).Start();
-        }
-
-		private static string GetComPort()
-		{
-			string result;
-			using (ManagementObjectCollection devices = new ManagementClass("Win32_SerialPort").GetInstances())
-			{
-				foreach (ManagementBaseObject device in devices)
-				{
-					string pnpDeviceId = device["PNPDeviceID"].ToString();
-					if (pnpDeviceId.Contains("CNCB"))
-					{
-						return device["DeviceID"].ToString();
-					}
-				}
-				result = null;
-			}
-			return result;
 		}
 
 		public static byte[] EncodeQuaternion(Quaternion q)
