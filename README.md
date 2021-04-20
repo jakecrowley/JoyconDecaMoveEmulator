@@ -1,5 +1,7 @@
 # Joycon DecaMove Emulator
-A very WIP DecaMove emulator for Joycons.
+A very WIP DecaMove emulator for Joycons. 
+
+I am working on removing the need for com0com, it already works by hooking directly into the service and bypassing the serial communication, however the software still needs to see the serial connection in order to work :(
 
 ## Installation
 
