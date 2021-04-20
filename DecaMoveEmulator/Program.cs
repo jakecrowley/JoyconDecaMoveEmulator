@@ -35,6 +35,8 @@ namespace DecaMoveEmulator
 		static dynamic decaMoveChannel;
 		static MethodInfo processPacket;
 
+		static Joycon jc = null;
+
 		static void Main(string[] args)
         {
 			KillExistingService();
@@ -99,7 +101,6 @@ namespace DecaMoveEmulator
 			Console.WriteLine("Scanning for joycons...");
 			joyconManager.Scan();
 
-			Joycon jc = null;
 			if (joyconManager.j.Count > 0)
 			{
 				joyconManager.Start();
@@ -115,16 +116,31 @@ namespace DecaMoveEmulator
 
 			processPacket.Invoke(decaMoveChannel, new object[] { verpkt });
 			processPacket.Invoke(decaMoveChannel, new object[] { onpkt });
-			processPacket.Invoke(decaMoveChannel, new object[] { batpkt });
 
-			while (true)
+			Timer t = new Timer(UpdateJoyconRotation);
+			t.Change(0, 5);
+
+			Timer chkbat = new Timer(CheckBattery);
+			chkbat.Change(0, 60000);
+
+			Console.ReadLine();
+		}
+
+		public static void CheckBattery(object o)
+        {
+			new Thread(() =>
 			{
-				JoyconManager.Instance.Update();
+				byte[] batt = BitConverter.GetBytes((ushort)(jc.GetBattery() * 10));
+				processPacket.Invoke(decaMoveChannel, new object[] { new byte[] { 0x62, 0x62, batt[0], batt[1] } });
+			}).Start();
+        }
 
-				var pkt = EncodeQuaternion(jc.GetVector());
-				processPacket.Invoke(decaMoveChannel, new object[] { pkt });
-				Thread.Sleep(5);
-			}
+		public static void UpdateJoyconRotation(object o)
+        {
+			JoyconManager.Instance.Update();
+
+			var pkt = EncodeQuaternion(jc.GetVector());
+			processPacket.Invoke(decaMoveChannel, new object[] { pkt });
 		}
 
 		public static byte[] EncodeQuaternion(Quaternion q)

@@ -68,6 +68,7 @@ namespace Joycon4CS
 		private UInt16 deadzone;
 		private UInt16[] stick_precal = { 0, 0 };
 
+		private bool subcmd_running = false;
 		private bool stop_polling = false;
 		private int timestamp;
 		private bool first_imu_packet = true;
@@ -260,6 +261,54 @@ namespace Joycon4CS
 			DebugPrint("Done with init.", DebugType.COMMS);
 			return 0;
 		}
+		public ushort GetBattery()
+        {
+			for(int i = 0; i < 40; i++)
+			{
+				byte[] buf = Subcommand(0x50, new byte[] { }, 0, true);
+
+				byte[] ret = new byte[] { buf[0x2], buf[0xF], buf[0x10] };
+
+				ushort val = BitConverter.ToUInt16(new byte[] { buf[0xD], buf[0xE] }, 0);
+				if (val == 0x50D0)
+				{
+					int batt = 0;
+					ushort num = (ushort)((ret[2] * 256) + ret[1]);
+
+					if (num < 1376)
+					{
+						batt = 1;
+					}
+					else if (num < 1440)
+					{
+						batt = (int)((double)((float)(num - 96 & 255)) / 7.0 + 1.0);
+					}
+					else if ((num + 64096) % 65535 <= 63)
+					{
+						batt = (int)((double)((float)(num + 96 & 255)) / 2.625 + 11.0);
+					}
+					else if ((num + 64032) % 65535 <= 55)
+					{
+						batt = (int)((double)((float)(num - 1504)) / 1.8964999914169312 + 36.0);
+					}
+					else if ((num + 63976) % 65535 <= 63)
+					{
+						batt = (int)((double)((float)(num - 24 & 255)) / 1.8529000282287598 + 66.0);
+					}
+					else
+					{
+						batt = ((num > 1623) ? 100 : batt);
+					}
+
+					if (batt == 0)
+						continue;
+
+					return (ushort)batt;
+				}
+			}
+
+			return 0;
+        }
 		public void SetFilterCoeff(float a)
 		{
 			filterweight = a;
@@ -287,6 +336,7 @@ namespace Joycon4CS
 		private System.DateTime ts_prev;
 		private int ReceiveRaw()
 		{
+			if (subcmd_running) return -1;
 			if (handle == IntPtr.Zero) return -2;
 			HIDapi.hid_set_nonblocking(handle, 0);
 			byte[] raw_buf = new byte[report_len];
@@ -301,8 +351,6 @@ namespace Joycon4CS
 
 					DebugPrint(string.Format("JoyCon {0} UP: {1}",
 						isLeft ? "Left" : "Right", rawUp), DebugType.CUSTOM1);
-
-
 				}
 				if (ts_en == raw_buf[1])
 				{
@@ -314,12 +362,14 @@ namespace Joycon4CS
 			return ret;
 		}
 		private Thread PollThreadObj;
+
 		private void Poll()
 		{
 			int attempts = 0;
-			while (!stop_polling & state > state_.NO_JOYCONS)
+			while (!stop_polling && state > state_.NO_JOYCONS)
 			{
 				SendRumble(rumble_obj.GetData());
+
 				int a = ReceiveRaw();
 				a = ReceiveRaw();
 
@@ -357,6 +407,8 @@ namespace Joycon4CS
 					{
 						rep = reports.Dequeue();
 						rep.CopyBuffer(report_buf);
+
+						//Console.WriteLine(BitConverter.ToUInt16(new byte[] { report_buf[0xD], report_buf[0xE] }, 0));
 					}
 					if (imu_enabled)
 					{
@@ -606,6 +658,7 @@ namespace Joycon4CS
 		}
 		private byte[] Subcommand(byte sc, byte[] buf, uint len, bool print = true)
 		{
+			subcmd_running = true;
 			byte[] buf_ = new byte[report_len];
 			byte[] response = new byte[report_len];
 			Array.Copy(default_buf, 0, buf_, 2, 8);
@@ -620,6 +673,7 @@ namespace Joycon4CS
 			int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 50);
 			if (res < 1) DebugPrint("No response.", DebugType.COMMS);
 			else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
+			subcmd_running = false;
 			return response;
 		}
 		private void dump_calibration_data()
