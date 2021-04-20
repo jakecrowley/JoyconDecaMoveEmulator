@@ -6,8 +6,8 @@ A WIP DecaMove emulator for Joycons.
 ## WIP Features
 
 - ~~Remove need for third party software~~ Done!
+- Correct battery indicator - Implemented, testing
 - Haptic Feedback support
-- Correct battery indicator
 
 ## Installation
 
